@@ -48,18 +48,21 @@ class APICall(object):
         r = None
         url = _API_URL + self.url
         if self.method == 'get':
-            r = requests.get(url, params=params)
+            r = requests.get(url, params=params, timeout=15.)
         elif self.method == 'post':
-            r = requests.post(url, data=params)
-        response = r.json()
-        # API error?
-        if isinstance(response, dict) and 'error' in response:
-            raise APIError(response['error'])
-        # Process fields
-        new_response = self._process_response(response)
-        if new_response is not None:
-            response = new_response
-        return response
+            r = requests.post(url, data=params, timeout=15.)
+        if r.ok:
+            response = r.json()
+            # API error?
+            if isinstance(response, dict) and 'error' in response:
+                raise APIError(response['error'])
+            # Process fields
+            new_response = self._process_response(response)
+            if new_response is not None:
+                response = new_response
+            return response
+        else:
+            raise APIError(r.status + ' ' + r.text)
 
 
 class APIPrivateCall(APICall):
